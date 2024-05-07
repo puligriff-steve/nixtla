@@ -1,0 +1,341 @@
+---
+description: Learn how to use TimeGPT for financial time series forecasting
+output-file: bitcoin_price_prediction.html
+title: Bitcoin price prediction
+---
+
+
+## Introduction
+
+Forecasting time series is a ubiquitous task in finance, supporting
+decisions in trading, risk management, and strategic planning. Despite
+its prevalence, predicting the future prices of financial assets remains
+a formidable challenge, mainly due to the inherent volatility of
+financial markets.
+
+For those who believe in the feasibility of forecasting these assets, or
+for professionals whose roles require such predictions, TimeGPT is a
+powerful tool that simplifies the forecasting process.
+
+In this tutorial, we will demonstrate how to use TimeGPT for financial
+time series forecasting, focusing on Bitcoin price prediction. We will
+also showcase how to use TimeGPT for uncertainty quantification, which
+is essential for risk management and decision-making.
+
+**Outline:**
+
+1.  [Load Bitcoin Price Data](#load-bitcoin-price-data)
+
+2.  [Get Started with TimeGPT](#get-started-with-timegpt)
+
+3.  [Visualize the Data](#visualize-the-data)
+
+4.  [Forecast with TimeGPT](#forecast-with-timegpt)
+
+5.  [Extend Bitcon Price Analysis with
+    TimeGPT](#extend-bitcoin-price-analysis-with-timegpt)
+
+6.  [Understand the Model’s
+    Limitations](#understand-the-models-limitations)
+
+7.  [References and Additional
+    Material](#references-and-additional-material)
+
+[![](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Nixtla/nixtla/blob/main/nbs/docs/use-cases/2_bitcoin_price_prediction.ipynb)
+
+## 1. Load Bitcoin Price Data
+
+Bitcoin (₿) is the first decentralized digital currency and is one of
+the most popular cryptocurrencies. Transactions are managed and recorded
+on a public ledger known as the blockchain. Bitcoins are created as a
+reward for mining, a process that involves solving complex cryptographic
+tasks to verify transactions. This digital currency can be used as
+payment for goods and services, traded for other currencies, or held as
+a store of value.
+
+In this tutorial, we will first download the historical Bitcoin price
+data with `cryptocmd`, a Python package for downloading data from
+[CoinMarketCap](https://coinmarketcap.com/). To start, we need to define
+a `scraper`, selecting our cryptocurrency of interest and the start and
+end dates in format dd-mm-yyyy.
+
+> **Note**
+>
+> You can install `cryptocmd` with `pip`:
+>
+> ```python
+> pip install cryptocmd
+> ```
+
+```python
+import pandas as pd 
+from cryptocmd import CmcScraper
+
+scraper = CmcScraper('BTC', '01-01-2020', '31-12-2023')
+```
+
+Next we create a `pandas` DataFrame with the data. Note that it is
+important to sort the data by date in ascending order.
+
+```python
+df = scraper.get_dataframe()
+df = df.sort_values('Date', ascending=True)
+df.head()
+```
+
+|      | Date       | Open        | High        | Low         | Close       | Volume       | Market Cap   | Time Open                | Time High                | Time Low                 | Time Close               |
+|------|------------|-------------|-------------|-------------|-------------|--------------|--------------|--------------------------|--------------------------|--------------------------|--------------------------|
+| 1460 | 2020-01-01 | 7194.891971 | 7254.330611 | 7174.944153 | 7200.174393 | 1.856566e+10 | 1.305808e+11 | 2020-01-01T00:00:00.000Z | 2020-01-01T15:42:01.000Z | 2020-01-01T01:06:01.000Z | 2020-01-01T23:59:59.999Z |
+| 1459 | 2020-01-02 | 7202.551122 | 7212.155253 | 6935.269972 | 6985.470001 | 2.080208e+10 | 1.266994e+11 | 2020-01-02T00:00:00.000Z | 2020-01-02T01:30:00.000Z | 2020-01-02T23:02:01.000Z | 2020-01-02T23:59:59.999Z |
+| 1458 | 2020-01-03 | 6984.428612 | 7413.715099 | 6914.995908 | 7344.884183 | 2.811148e+10 | 1.332334e+11 | 2020-01-03T00:00:00.000Z | 2020-01-03T17:04:00.000Z | 2020-01-03T02:10:01.000Z | 2020-01-03T23:59:59.999Z |
+| 1457 | 2020-01-04 | 7345.375275 | 7427.385794 | 7309.514012 | 7410.656566 | 1.844427e+10 | 1.344425e+11 | 2020-01-04T00:00:00.000Z | 2020-01-04T18:44:02.000Z | 2020-01-04T00:39:02.000Z | 2020-01-04T23:59:59.999Z |
+| 1456 | 2020-01-05 | 7410.451694 | 7544.496872 | 7400.535561 | 7411.317327 | 1.972507e+10 | 1.344695e+11 | 2020-01-05T00:00:00.000Z | 2020-01-05T18:57:00.000Z | 2020-01-05T23:18:00.000Z | 2020-01-05T23:59:59.999Z |
+
+The `scraper` provides different details regarding the price of Bitcoin.
+Here, we will use the `Close` column as our target variable, although
+any other column could also be used. It’s important to note that unlike
+traditional financial assets, Bitcoin trades 24/7. Therefore, the
+closing price represents the price of Bitcoin at a specific time each
+day, rather than at the end of a trading day.
+
+```python
+df = df[['Date', 'Close']]
+df.head()
+```
+
+|      | Date       | Close       |
+|------|------------|-------------|
+| 1460 | 2020-01-01 | 7200.174393 |
+| 1459 | 2020-01-02 | 6985.470001 |
+| 1458 | 2020-01-03 | 7344.884183 |
+| 1457 | 2020-01-04 | 7410.656566 |
+| 1456 | 2020-01-05 | 7411.317327 |
+
+For convenience, we will rename the `Date` and `Close` columns to `ds`
+and `y`, respectively.
+
+```python
+df.rename(columns={'Date': 'ds', 'Close': 'y'}, inplace=True)
+```
+
+## 2. Get Started with TimeGPT
+
+To get started with `TimeGPT`, you need to instantiate the
+`NixtlaClient` class. For this, you will need a Nixtla API key.
+
+```python
+from nixtla import NixtlaClient
+
+nixtla_client = NixtlaClient(
+    # defaults to os.environ.get("NIXTLA_API_KEY")
+    api_key = 'my_api_key_provided_by_nixtla'
+)
+```
+
+To learn more about how to set up your API key, please refer to the
+[Setting Up Your Authentication API
+Key](https://docs.nixtla.io/docs/getting-started-setting_up_your_api_key)
+tutorial.
+
+## 3. Visualize the Data
+
+Before attempting any forecasting, it is good practice to visualize the
+data we want to predict. The `NixtlaClient` class includes a `plot`
+method for this purpose.
+
+The `plot` method has an `engine` argument that allows you to choose
+between different plotting libraries. Default is `matplotlib`, but you
+can also use `plotly` for interactive plots.
+
+```python
+nixtla_client.plot(df)
+```
+
+![](/nixtla/docs/use-cases/2_bitcoin_price_prediction_files/figure-markdown_strict/cell-8-output-1.png)
+
+If you haven’t renamed the column names of your DataFrame to `ds` and
+`y`, you will need to specify the `time_col` and `target_col` arguments
+of the `plot`method:
+
+```python
+nixtla_client.plot(df, time_col='name of your time column', target_col='name of your target column')
+```
+
+This is necessary not only for the `plot` method but for all methods
+from the `NixtlaClient` class.
+
+## 4. Forecast with TimeGPT
+
+Now we are ready to generate predictions with TimeGPT. To do this, we
+will use the `forecast` method from the `NixtlaClient` class.
+
+The `forecast` method requires the following arguments:
+
+-   `df`: The DataFrame containing the time series data
+
+-   `h`: (int) The forecast horizon. In this case, we will forecast the
+    next 7 days.
+
+-   `level`: (list) The confidence level for the prediction intervals.
+    Given the inherent volatility of Bitcoin, we will use multiple
+    confidence levels.
+
+```python
+level = [50,80,90] # confidence levels 
+
+fcst = nixtla_client.forecast(df, h=7, level=level)
+fcst.head()
+```
+
+``` text
+INFO:nixtla.nixtla_client:Validating inputs...
+INFO:nixtla.nixtla_client:Preprocessing dataframes...
+INFO:nixtla.nixtla_client:Inferred freq: D
+INFO:nixtla.nixtla_client:Restricting input...
+INFO:nixtla.nixtla_client:Calling Forecast Endpoint...
+```
+
+|     | ds         | TimeGPT      | TimeGPT-lo-90 | TimeGPT-lo-80 | TimeGPT-lo-50 | TimeGPT-hi-50 | TimeGPT-hi-80 | TimeGPT-hi-90 |
+|-----|------------|--------------|---------------|---------------|---------------|---------------|---------------|---------------|
+| 0   | 2024-01-01 | 42269.460938 | 39567.209020  | 40429.953636  | 41380.654646  | 43158.267229  | 44108.968239  | 44971.712855  |
+| 1   | 2024-01-02 | 42469.917969 | 39697.941669  | 40578.197049  | 41466.511361  | 43473.324576  | 44361.638888  | 45241.894268  |
+| 2   | 2024-01-03 | 42864.078125 | 40538.871243  | 41586.252507  | 42284.316674  | 43443.839576  | 44141.903743  | 45189.285007  |
+| 3   | 2024-01-04 | 42881.621094 | 40603.117448  | 41216.106493  | 42058.539392  | 43704.702795  | 44547.135694  | 45160.124739  |
+| 4   | 2024-01-05 | 42773.457031 | 40213.699760  | 40665.384780  | 41489.812431  | 44057.101632  | 44881.529282  | 45333.214302  |
+
+We can pass the forecasts we just generated to the `plot` method to
+visualize the predictions with the historical data.
+
+```python
+nixtla_client.plot(df, fcst, level=level)
+```
+
+![](/nixtla/docs/use-cases/2_bitcoin_price_prediction_files/figure-markdown_strict/cell-10-output-1.png)
+
+To get a closer look at the predictions, we can zoom in on the plot or
+specify the maximum number of in-sample observations to be plotted using
+the `max_insample_length` argument. Note that setting
+`max_insample_length=60`, for instance, will display the last 60
+historical values along with the complete forecast.
+
+```python
+nixtla_client.plot(df, fcst, level=level, max_insample_length=60)
+```
+
+![](/nixtla/docs/use-cases/2_bitcoin_price_prediction_files/figure-markdown_strict/cell-11-output-1.png)
+
+Additionally, if you set the `add_history` argument of the `forecast`
+method to `True`, `TimeGPT` will generate predictions for the historical
+observations too. This can be useful for assessing the model’s
+performance on the training data.
+
+```python
+forecast = nixtla_client.forecast(df, h=7, level=level, add_history=True)
+forecast.head()
+```
+
+``` text
+INFO:nixtla.nixtla_client:Validating inputs...
+INFO:nixtla.nixtla_client:Preprocessing dataframes...
+INFO:nixtla.nixtla_client:Inferred freq: D
+INFO:nixtla.nixtla_client:Calling Forecast Endpoint...
+INFO:nixtla.nixtla_client:Calling Historical Forecast Endpoint...
+```
+
+|     | ds         | TimeGPT     | TimeGPT-lo-50 | TimeGPT-lo-80 | TimeGPT-lo-90 | TimeGPT-hi-50 | TimeGPT-hi-80 | TimeGPT-hi-90 |
+|-----|------------|-------------|---------------|---------------|---------------|---------------|---------------|---------------|
+| 0   | 2020-02-03 | 9425.702148 | 7622.287194   | 5999.157479   | 5027.779677   | 11229.117103  | 12852.246818  | 13823.624619  |
+| 1   | 2020-02-04 | 9568.482422 | 7765.067467   | 6141.937752   | 5170.559951   | 11371.897376  | 12995.027092  | 13966.404893  |
+| 2   | 2020-02-05 | 9557.082031 | 7753.667077   | 6130.537362   | 5159.159560   | 11360.496986  | 12983.626701  | 13955.004502  |
+| 3   | 2020-02-06 | 9486.123047 | 7682.708092   | 6059.578377   | 5088.200576   | 11289.538001  | 12912.667717  | 13884.045518  |
+| 4   | 2020-02-07 | 9475.242188 | 7671.827233   | 6048.697518   | 5077.319716   | 11278.657142  | 12901.786857  | 13873.164659  |
+
+```python
+nixtla_client.plot(df, forecast, level=level)
+```
+
+![](/nixtla/docs/use-cases/2_bitcoin_price_prediction_files/figure-markdown_strict/cell-13-output-1.png)
+
+## 5. Extend Bitcoin Price Analysis with TimeGPT
+
+### Anomaly Detection
+
+Given the volatility of the price of Bitcoin, it can be useful to try to
+identify anomalies in the data. `TimeGPT` can be used for this by
+calling the `detect_anomalies` method from the `NixtlaClient` class.
+This method evaluates each observation against its context within the
+series, using statistical measures to determine its likelihood of being
+an anomaly. By default, it identifies anomalies based on a 99 percent
+prediction interval. To change this, you can specify the `level`
+argument.
+
+```python
+anomalies_df = nixtla_client.detect_anomalies(df)
+```
+
+``` text
+INFO:nixtla.nixtla_client:Validating inputs...
+INFO:nixtla.nixtla_client:Preprocessing dataframes...
+INFO:nixtla.nixtla_client:Inferred freq: D
+INFO:nixtla.nixtla_client:Calling Anomaly Detector Endpoint...
+```
+
+```python
+nixtla_client.plot(df, anomalies_df, plot_anomalies=True)
+```
+
+![](/nixtla/docs/use-cases/2_bitcoin_price_prediction_files/figure-markdown_strict/cell-15-output-1.png)
+
+To learn more about how to detect anomalies with `TimeGPT`, take a look
+at our [Anomaly
+Detection](https://docs.nixtla.io/docs/capabilities-anomaly-detection-anomaly_detection)
+tutorial.
+
+### Add Exogenous Variables
+
+If you have additional information that you believe could help improve
+the forecast, consider including it as an exogenous variable. For
+instance, you might add data such as the price of other
+cryptocurrencies, proprietary information, stock market indices, or the
+number of transactions in the Bitcoin network.
+
+`TimeGPT` supports the incorporation of exogenous variables in the
+`forecast` method. However, keep in mind that you’ll need to know the
+future values of these variables.
+
+To learn how to incorporate exogenous variables to `TimeGPT`, refer to
+the [Exogenous
+Variables](https://docs.nixtla.io/docs/tutorials-exogenous_variables)
+tutorial.
+
+## 6. Understand the Model’s Limitations
+
+As stated in the introduction, predicting the future prices of financial
+assets is a challenging task, especially for assets like Bitcoin.
+However, for those who need or want to forecast these assets, `TimeGPT`
+can be a powerful tool that simplifies the forecasting process. With
+just a couple of lines of code, `TimeGPT` can help you:
+
+-   Produce point forecasts
+-   Quantify the uncertainty of your predictions
+-   Produce in-sample forecasts
+-   Detect anomalies
+-   Incorporate exogenous variables
+
+To learn more about `TimeGPT` capabilities, please refer to the [TimeGPT
+Documentation](https://docs.nixtla.io/).
+
+## 7. References and Additional Material
+
+**References**
+
+-   [Joaquín Amat Rodrigo and Javier Escobar Ortiz (2022), “Bitcoin
+    price prediction with Python, when the past does not repeat
+    itself”](https://www.cienciadedatos.net/documentos/py41-forecasting-cryptocurrency-bitcoin-machine-learning-python.html)
+
+Furthermore, for many financial time series, the best estimate for the
+price is often a random walk model, meaning that the best forecast for
+tomorrow’s price is today’s price. Nixtla’s
+[StatsForecast](https://nixtlaverse.nixtla.io/statsforecast/index.html)
+library allows you to easily implement this model and variations.
+

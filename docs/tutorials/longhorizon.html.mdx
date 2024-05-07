@@ -1,6 +1,6 @@
 ---
 output-file: longhorizon.html
-title: Forecasting on a long horizon
+title: Long-horizon forecasting
 ---
 
 
@@ -20,25 +20,32 @@ predictions. It is also possible to have unknown factors come into play
 in the long-term that were not expected at the time of forecasting.
 
 To tackle those challenges, use TimeGPT’s specialized model for
-long-horizon forecasting by specifying `model='long-horizon'` in your
-setup.
+long-horizon forecasting by specifying `model='timegpt-1-long-horizon'`
+in your setup.
 
 For a detailed step-by-step guide, follow this tutorial on long-horizon
 forecasting.
 
-[![](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Nixtla/nixtla/blob/main/nbs/docs/tutorials/12_longhorizon.ipynb)
+[![](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Nixtla/nixtla/blob/main/nbs/docs/tutorials/04_longhorizon.ipynb)
+
+## 1. Import packages
+
+First, we install and import the required packages and initialize the
+Nixtla client.
 
 ```python
-from nixtlats import TimeGPT
+from nixtla import NixtlaClient
 ```
 
 
 ```python
-timegpt = TimeGPT(
-    # defaults to os.environ.get("TIMEGPT_TOKEN")
-    token = 'my_token_provided_by_nixtla'
+nixtla_client = NixtlaClient(
+    # defaults to os.environ.get("NIXTLA_API_KEY")
+    api_key = 'my_api_key_provided_by_nixtla'
 )
 ```
+
+## 2. Load the data
 
 Let’s load the ETTh1 dataset. This is a widely used dataset to evaluate
 models on their long-horizon forecasting capabalities.
@@ -76,35 +83,39 @@ test = Y_df[-96:]             # 96 = 4 days x 24h/day
 input_seq = Y_df[-1104:-96]   # Gets a sequence of 1008 observations (1008 = 42 days * 24h/day)
 ```
 
+## 3. Forecasting for long-horizon
+
 Now, we are ready to use TimeGPT for long-horizon forecasting. Here, we
-need to set the `model` parameter to `"long-horizon"`. This is the
-specialized model in TimeGPT that can handle such tasks.
+need to set the `model` parameter to `"timegpt-1-long-horizon"`. This is
+the specialized model in TimeGPT that can handle such tasks.
 
 ```python
-fcst_df = timegpt.forecast(
+fcst_df = nixtla_client.forecast(
     df=input_seq,
     h=96,
     level=[90],
-    fewshot_steps=10,
-    fewshot_loss='mae',
-    model='long-horizon',
+    finetune_steps=10,
+    finetune_loss='mae',
+    model='timegpt-1-long-horizon',
     time_col='ds',
     target_col='y'
 )
 ```
 
 ``` text
-INFO:nixtlats.timegpt:Validating inputs...
-INFO:nixtlats.timegpt:Preprocessing dataframes...
-INFO:nixtlats.timegpt:Inferred freq: H
-INFO:nixtlats.timegpt:Calling Forecast Endpoint...
+INFO:nixtlats.nixtla_client:Validating inputs...
+INFO:nixtlats.nixtla_client:Preprocessing dataframes...
+INFO:nixtlats.nixtla_client:Inferred freq: H
+INFO:nixtlats.nixtla_client:Calling Forecast Endpoint...
 ```
 
 ```python
-timegpt.plot(Y_df[-168:], fcst_df, models=['TimeGPT'], level=[90], time_col='ds', target_col='y')
+nixtla_client.plot(Y_df[-168:], fcst_df, models=['TimeGPT'], level=[90], time_col='ds', target_col='y')
 ```
 
-![](/nixtla/docs/tutorials/12_longhorizon_files/figure-markdown_strict/cell-8-output-1.png)
+![](/nixtla/docs/tutorials/04_longhorizon_files/figure-markdown_strict/cell-8-output-1.png)
+
+## Evaluation
 
 Let’s now evaluate the performance of TimeGPT using the mean absolute
 error (MAE).
@@ -126,8 +137,8 @@ print(evaluation)
 
 ``` text
   unique_id   TimeGPT
-0        OT  0.145393
+0        OT  0.146111
 ```
 
-Here, TimeGPT achieves a MAE of 0.14.
+Here, TimeGPT achieves a MAE of 0.146.
 

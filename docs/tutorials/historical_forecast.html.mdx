@@ -7,26 +7,29 @@ title: Historical forecast
 Our time series model offers a powerful feature that allows users to
 retrieve historical forecasts alongside the prospective predictions.
 This functionality is accessible through the forecast method by setting
-the add_history=True argument.
+the `add_history=True` argument.
 
-[![](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Nixtla/nixtla/blob/main/nbs/docs/tutorials/7_historical_forecast.ipynb)
+[![](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Nixtla/nixtla/blob/main/nbs/docs/tutorials/09_historical_forecast.ipynb)
+
+## 1. Import packages
+
+First, we install and import the required packages and initialize the
+Nixtla client.
 
 ```python
 import pandas as pd
-from nixtlats import TimeGPT
+from nixtla import NixtlaClient
 ```
 
-``` text
-/home/ubuntu/miniconda/envs/nixtlats/lib/python3.11/site-packages/statsforecast/core.py:25: TqdmWarning: IProgress not found. Please update jupyter and ipywidgets. See https://ipywidgets.readthedocs.io/en/stable/user_install.html
-  from tqdm.autonotebook import tqdm
-```
 
 ```python
-timegpt = TimeGPT(
-    # defaults to os.environ.get("TIMEGPT_TOKEN")
-    token = 'my_token_provided_by_nixtla'
+nixtla_client = NixtlaClient(
+    # defaults to os.environ.get("NIXTLA_API_KEY")
+    api_key = 'my_api_key_provided_by_nixtla'
 )
 ```
+
+## 2. Load data
 
 Now you can start to make forecasts! Let’s import an example:
 
@@ -44,31 +47,35 @@ df.head()
 | 4   | 1949-05-01 | 121   |
 
 ```python
-timegpt.plot(df, time_col='timestamp', target_col='value')
+nixtla_client.plot(df, time_col='timestamp', target_col='value')
 ```
 
-![](/nixtla/docs/tutorials/7_historical_forecast_files/figure-markdown_strict/cell-6-output-1.png)
+![](/nixtla/docs/tutorials/09_historical_forecast_files/figure-markdown_strict/cell-6-output-1.png)
+
+## 3. Historical forecast
 
 Let’s add fitted values. When `add_history` is set to True, the output
 DataFrame will include not only the future forecasts determined by the h
 argument, but also the historical predictions. Currently, the historical
 forecasts are not affected by `h`, and have a fix horizon depending on
 the frequency of the data. The historical forecasts are produced in a
-rolling window fashion, and concatenated.
+rolling window fashion, and concatenated. This means that the model is
+applied sequentially at each time step using only the most recent
+information available up to that point.
 
 ```python
-timegpt_fcst_with_history_df = timegpt.forecast(
+timegpt_fcst_with_history_df = nixtla_client.forecast(
     df=df, h=12, time_col='timestamp', target_col='value',
     add_history=True,
 )
 ```
 
 ``` text
-INFO:nixtlats.timegpt:Validating inputs...
-INFO:nixtlats.timegpt:Preprocessing dataframes...
-INFO:nixtlats.timegpt:Inferred freq: MS
-INFO:nixtlats.timegpt:Calling Forecast Endpoint...
-INFO:nixtlats.timegpt:Calling Historical Forecast Endpoint...
+INFO:nixtla.nixtla_client:Validating inputs...
+INFO:nixtla.nixtla_client:Preprocessing dataframes...
+INFO:nixtla.nixtla_client:Inferred freq: MS
+INFO:nixtla.nixtla_client:Calling Forecast Endpoint...
+INFO:nixtla.nixtla_client:Calling Historical Forecast Endpoint...
 ```
 
 ```python
@@ -88,15 +95,15 @@ predictions can be invaluable for understanding the model’s behavior and
 for evaluating its performance over time.
 
 ```python
-timegpt.plot(df, timegpt_fcst_with_history_df, time_col='timestamp', target_col='value')
+nixtla_client.plot(df, timegpt_fcst_with_history_df, time_col='timestamp', target_col='value')
 ```
 
-![](/nixtla/docs/tutorials/7_historical_forecast_files/figure-markdown_strict/cell-9-output-1.png)
+![](/nixtla/docs/tutorials/09_historical_forecast_files/figure-markdown_strict/cell-9-output-1.png)
 
 Please note, however, that the initial values of the series are not
-included in these historical forecasts. This is because our model,
-`TimeGPT`, requires a certain number of initial observations to generate
-reliable forecasts. Therefore, while interpreting the output, it’s
-important to be aware that the first few observations serve as the basis
-for the model’s predictions and are not themselves predicted values.
+included in these historical forecasts. This is because `TimeGPT`
+requires a certain number of initial observations to generate reliable
+forecasts. Therefore, while interpreting the output, it’s important to
+be aware that the first few observations serve as the basis for the
+model’s predictions and are not themselves predicted values.
 
