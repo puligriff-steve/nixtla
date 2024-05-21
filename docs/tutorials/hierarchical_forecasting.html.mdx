@@ -37,6 +37,12 @@ nixtla_client = NixtlaClient(
 )
 ```
 
+> 👍 Use an Azure AI endpoint
+>
+> To use an Azure AI endpoint, set the `base_url` argument:
+>
+> `nixtla_client = NixtlaClient(base_url="you azure ai endpoint", api_key="your api_key")`
+
 ## 2. Load data
 
 We use the Australian Tourism dataset, from [Forecasting, Principles and
@@ -47,8 +53,8 @@ the lower levels (e.g. the regions Sidney, Blue Mountains and Hunter)
 should be coherent with the forecasts of the higher levels (e.g. New
 South Wales).
 
-<img src="https://github.com/Nixtla/nixtla/blob/main/nbs/img/australia_tourism.png?raw=true" alt="Figure 1. Overview of Australia" width="700" />
-<img src="https://github.com/Nixtla/nixtla/blob/main/nbs/img/australia_hierarchy.png?raw=true" alt="Figure 2. Overview of hierarchy of Australia" width="700" />
+<img src="https://github.com/Nixtla/nixtla/blob/main/nbs/img/australia_tourism.png?raw=true" alt="Map of Australia color coded by state. The states are from west to east, and then north to south - Western Australia, Northern Territory, South Australia, Queensland, New South Wales, Victoria. Australian Capital Territory is a small area within New South Wales. Tasmania is an island to the southeast." width="700" />
+<img src="https://github.com/Nixtla/nixtla/blob/main/nbs/img/australia_hierarchy.png?raw=true" alt="Australia hierarchy. Australia at the top with New South Wales and Queenslad below. Sidney, Blue Mountains, and Hunter in New South Wales. Brisbane and Cairns in Queensland." width="700" />
 
 The dataset only contains the time series at the lowest level, so we
 need to create the time series for all hierarchies.
@@ -156,6 +162,20 @@ INFO:nixtla.nixtla_client:Preprocessing dataframes...
 INFO:nixtla.nixtla_client:Calling Forecast Endpoint...
 INFO:nixtla.nixtla_client:Calling Historical Forecast Endpoint...
 ```
+
+> 📘 Available models in Azure AI
+>
+> If you are using an Azure AI endpoint, please be sure to set
+> `model="azureai"`:
+>
+> `nixtla_client.forecast(..., model="azureai")`
+>
+> For the public API, we support two models: `timegpt-1` and
+> `timegpt-1-long-horizon`.
+>
+> By default, `timegpt-1` is used. Please see [this
+> tutorial](https://docs.nixtla.io/docs/tutorials-long_horizon_forecasting)
+> on how and when to use `timegpt-1-long-horizon`.
 
 ```python
 timegpt_fcst_insample = timegpt_fcst.query("ds < '2016-01-01'")

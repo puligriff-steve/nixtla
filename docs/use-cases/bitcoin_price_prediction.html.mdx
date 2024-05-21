@@ -70,7 +70,10 @@ end dates in format dd-mm-yyyy.
 ```python
 import pandas as pd 
 from cryptocmd import CmcScraper
+```
 
+
+```python
 scraper = CmcScraper('BTC', '01-01-2020', '31-12-2023')
 ```
 
@@ -125,12 +128,22 @@ To get started with `TimeGPT`, you need to instantiate the
 
 ```python
 from nixtla import NixtlaClient
+```
 
+
+```python
 nixtla_client = NixtlaClient(
     # defaults to os.environ.get("NIXTLA_API_KEY")
     api_key = 'my_api_key_provided_by_nixtla'
 )
 ```
+
+> 👍 Use an Azure AI endpoint
+>
+> To use an Azure AI endpoint, remember to set also the `base_url`
+> argument:
+>
+> `nixtla_client = NixtlaClient(base_url="you azure ai endpoint", api_key="your api_key")`
 
 To learn more about how to set up your API key, please refer to the
 [Setting Up Your Authentication API
@@ -151,7 +164,7 @@ can also use `plotly` for interactive plots.
 nixtla_client.plot(df)
 ```
 
-![](/nixtla/docs/use-cases/2_bitcoin_price_prediction_files/figure-markdown_strict/cell-8-output-1.png)
+![](/nixtla/docs/use-cases/2_bitcoin_price_prediction_files/figure-markdown_strict/cell-10-output-1.png)
 
 If you haven’t renamed the column names of your DataFrame to `ds` and
 `y`, you will need to specify the `time_col` and `target_col` arguments
@@ -203,6 +216,20 @@ INFO:nixtla.nixtla_client:Calling Forecast Endpoint...
 | 3   | 2024-01-04 | 42881.621094 | 40603.117448  | 41216.106493  | 42058.539392  | 43704.702795  | 44547.135694  | 45160.124739  |
 | 4   | 2024-01-05 | 42773.457031 | 40213.699760  | 40665.384780  | 41489.812431  | 44057.101632  | 44881.529282  | 45333.214302  |
 
+> 📘 Available models in Azure AI
+>
+> If you are using an Azure AI endpoint, please be sure to set
+> `model="azureai"`:
+>
+> `nixtla_client.forecast(..., model="azureai")`
+>
+> For the public API, we support two models: `timegpt-1` and
+> `timegpt-1-long-horizon`.
+>
+> By default, `timegpt-1` is used. Please see [this
+> tutorial](https://docs.nixtla.io/docs/tutorials-long_horizon_forecasting)
+> on how and when to use `timegpt-1-long-horizon`.
+
 We can pass the forecasts we just generated to the `plot` method to
 visualize the predictions with the historical data.
 
@@ -210,7 +237,7 @@ visualize the predictions with the historical data.
 nixtla_client.plot(df, fcst, level=level)
 ```
 
-![](/nixtla/docs/use-cases/2_bitcoin_price_prediction_files/figure-markdown_strict/cell-10-output-1.png)
+![](/nixtla/docs/use-cases/2_bitcoin_price_prediction_files/figure-markdown_strict/cell-12-output-1.png)
 
 To get a closer look at the predictions, we can zoom in on the plot or
 specify the maximum number of in-sample observations to be plotted using
@@ -222,7 +249,7 @@ historical values along with the complete forecast.
 nixtla_client.plot(df, fcst, level=level, max_insample_length=60)
 ```
 
-![](/nixtla/docs/use-cases/2_bitcoin_price_prediction_files/figure-markdown_strict/cell-11-output-1.png)
+![](/nixtla/docs/use-cases/2_bitcoin_price_prediction_files/figure-markdown_strict/cell-13-output-1.png)
 
 Additionally, if you set the `add_history` argument of the `forecast`
 method to `True`, `TimeGPT` will generate predictions for the historical
@@ -250,11 +277,25 @@ INFO:nixtla.nixtla_client:Calling Historical Forecast Endpoint...
 | 3   | 2020-02-06 | 9486.123047 | 7682.708092   | 6059.578377   | 5088.200576   | 11289.538001  | 12912.667717  | 13884.045518  |
 | 4   | 2020-02-07 | 9475.242188 | 7671.827233   | 6048.697518   | 5077.319716   | 11278.657142  | 12901.786857  | 13873.164659  |
 
+> 📘 Available models in Azure AI
+>
+> If you are using an Azure AI endpoint, please be sure to set
+> `model="azureai"`:
+>
+> `nixtla_client.forecast(..., model="azureai")`
+>
+> For the public API, we support two models: `timegpt-1` and
+> `timegpt-1-long-horizon`.
+>
+> By default, `timegpt-1` is used. Please see [this
+> tutorial](https://docs.nixtla.io/docs/tutorials-long_horizon_forecasting)
+> on how and when to use `timegpt-1-long-horizon`.
+
 ```python
 nixtla_client.plot(df, forecast, level=level)
 ```
 
-![](/nixtla/docs/use-cases/2_bitcoin_price_prediction_files/figure-markdown_strict/cell-13-output-1.png)
+![](/nixtla/docs/use-cases/2_bitcoin_price_prediction_files/figure-markdown_strict/cell-15-output-1.png)
 
 ## 5. Extend Bitcoin Price Analysis with TimeGPT
 
@@ -280,11 +321,25 @@ INFO:nixtla.nixtla_client:Inferred freq: D
 INFO:nixtla.nixtla_client:Calling Anomaly Detector Endpoint...
 ```
 
+> 📘 Available models in Azure AI
+>
+> If you are using an Azure AI endpoint, please be sure to set
+> `model="azureai"`:
+>
+> `nixtla_client.detect_anomalies(..., model="azureai")`
+>
+> For the public API, we support two models: `timegpt-1` and
+> `timegpt-1-long-horizon`.
+>
+> By default, `timegpt-1` is used. Please see [this
+> tutorial](https://docs.nixtla.io/docs/tutorials-long_horizon_forecasting)
+> on how and when to use `timegpt-1-long-horizon`.
+
 ```python
 nixtla_client.plot(df, anomalies_df, plot_anomalies=True)
 ```
 
-![](/nixtla/docs/use-cases/2_bitcoin_price_prediction_files/figure-markdown_strict/cell-15-output-1.png)
+![](/nixtla/docs/use-cases/2_bitcoin_price_prediction_files/figure-markdown_strict/cell-17-output-1.png)
 
 To learn more about how to detect anomalies with `TimeGPT`, take a look
 at our [Anomaly
